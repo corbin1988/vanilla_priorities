@@ -9,19 +9,23 @@ let priorities = [
   { task: "Call", urgency: 8 }
 ];
 
-let lastOrderOfPriorities = [];
+let lastOrderOfPriorities;
 
 const container = document.querySelector('.container');
 
 function updateServerPriorities(updatedPriority) {
+  console.error("These logs will be a similar format that updates the backend")
   console.warn("All priorities");
   console.log(priorities);
   
   console.warn("Single updated priority");
   console.log(updatedPriority);
   
-  console.warn("All Changed Priorities");
-  console.log(lastOrderOfPriorities);
+  console.warn("All Changed Priorities (Will output only changed priorities, just needs some work)");
+  const parsedLastOrderOfPriorities = JSON.parse(lastOrderOfPriorities);
+  console.log(parsedLastOrderOfPriorities)
+
+  console.log()
 }
 
 function fillContainer() {
@@ -47,8 +51,12 @@ function fillContainer() {
 
     container.appendChild(div);
 
-    div.addEventListener('dragstart', () => {
+    //Dragstart
+    div.addEventListener('dragstart', (event) => {
+      //Using JSON.stringify to create a deep clone of priorities so data isn't mutated
+      lastOrderOfPriorities = JSON.stringify(priorities); 
       div.classList.add('dragging');
+      div.classList.add('dragged');
 
       // Store the data in the 'text' type to be dragged
       const data = JSON.stringify({ task: priority.task, urgency: priority.urgency });
@@ -57,9 +65,6 @@ function fillContainer() {
 
     div.addEventListener('dragend',  () => {
       div.classList.remove('dragging');
-      updatePrioritiesOrder();
-      
-      updateServerPriorities(priorities, JSON.parse(div.dataset.priority), lastOrderOfPriorities)
     });
   });
 }
@@ -67,9 +72,10 @@ function fillContainer() {
 
 window.onload = function() {
   fillContainer();
-
+ 
   container.addEventListener('dragover', e => {
     e.preventDefault();
+    // console.warn('ahh')
     const afterElement = getDragAfterElement(container, e.clientY);
     const draggable = document.querySelector('.dragging');
     if (afterElement == null) {
@@ -77,6 +83,14 @@ window.onload = function() {
     } else {
       container.insertBefore(draggable, afterElement);
     }
+  });
+
+  container.addEventListener('drop', e => {
+    const dragged = document.querySelector('.dragged');
+
+    updateServerPriorities(JSON.parse(dragged.dataset.priority))
+  
+    updatePrioritiesOrder();
   });
 };
 
@@ -110,10 +124,9 @@ function updatePrioritiesOrder() {
     const taskName = element.querySelector('h3').textContent;
     const updatedUrgency = index + 1;
     const taskIndex = priorities.findIndex(item => item.task === taskName);
-    const oldPriority = priorities[taskIndex];
     priorities[taskIndex].urgency = updatedUrgency;
     
-    console.error(priorities)
+    element.dataset.priority = JSON.stringify({ task: taskName, urgency: updatedUrgency });
     // Update the HTML with the new urgency values
     element.querySelector('p span').nextSibling.textContent = ` ${updatedUrgency}`;
   });
